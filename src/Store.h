@@ -8,3 +8,5 @@ struct Store {
 
 Store store;
 uint addr = 0;
+
+ESP8266WebServer server(80); // Create Web Server on Port 80
