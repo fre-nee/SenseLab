@@ -39,7 +39,7 @@ void setup()
   }
 
   server.on("/", handleRoot);
-  server.on("/scanWifi", handleScanWifi);
+  server.on("/scanwifi", handleScanWifi);
   server.onNotFound(handleNotFound);
 
   server.begin();
