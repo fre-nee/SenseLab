@@ -11,7 +11,7 @@ int checkOpMode() {
       "SenseLab",     // default SSID
       "",             // default password
       1,              // opMode
-      0               // projectId
+      ""               // projectId
     };
     EEPROM.put(addr, defultStore);
     EEPROM.commit();
