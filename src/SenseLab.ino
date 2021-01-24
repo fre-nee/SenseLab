@@ -9,6 +9,7 @@
 #include "CreateAP.h"
 #include "HandleNotFound.h"
 #include "HandleRoot.h"
+#include "HandleScanWifi.h"
 
 /*
     opMode
@@ -38,6 +39,7 @@ void setup()
   }
 
   server.on("/", handleRoot);
+  server.on("/scanWifi", handleScanWifi);
   server.onNotFound(handleNotFound);
 
   server.begin();
