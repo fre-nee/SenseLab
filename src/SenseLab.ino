@@ -13,6 +13,7 @@
 #include "HandleDeviceSetup.h"
 #include "HandleWifiSetup.h"
 #include "ConnectWiFi.h"
+#include "HandleReset.h"
 
 /*
     opMode
@@ -57,6 +58,7 @@ void setup()
   server.on("/scanwifi", handleScanWifi);
   server.on("/devicesetup", handleDeviceSetup);
   server.on("/wifisetup", handleWifiSetup);
+  server.on("/reset", handleReset);
   server.onNotFound(handleNotFound);
 
   server.begin();
