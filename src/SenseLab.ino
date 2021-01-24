@@ -1,7 +1,7 @@
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include "Store.h"
-#include "checkOpMode.h"
+#include "CheckOpMode.h"
 #include "CreateAP.h"
 
 /*
@@ -21,7 +21,7 @@ void setup() {
   //if opMode is 1 create AP for initial device setup
   if (oprationMode == 1) {
     IPAddress ip = createAP(store.ssid);
-    Serial.println("IP Adress ->" + ip);
+    Serial.println("IP Adress ->" + ip.toString());
   }
 }
 
