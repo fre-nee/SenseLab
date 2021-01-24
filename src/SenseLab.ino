@@ -11,6 +11,8 @@
 #include "HandleRoot.h"
 #include "HandleScanWifi.h"
 #include "HandleDeviceSetup.h"
+#include "HandleWifiSetup.h"
+#include "ConnectWiFi.h"
 
 /*
     opMode
@@ -40,6 +42,12 @@ void setup()
     Serial.println(String(store.deviceId) + " - IP Adress ->" + ip.toString());
   }
 
+  if (oprationMode == 3)
+  {
+    IPAddress ip = connectWiFi(store.ssid, store.password);
+    Serial.println(String(store.ssid) + " - IP Adress ->" + ip.toString());
+  }
+
   if (MDNS.begin("esp8266"))
   {
     Serial.println("MDNS responder started");
@@ -48,6 +56,7 @@ void setup()
   server.on("/", handleRoot);
   server.on("/scanwifi", handleScanWifi);
   server.on("/devicesetup", handleDeviceSetup);
+  server.on("/wifisetup", handleWifiSetup);
   server.onNotFound(handleNotFound);
 
   server.begin();
