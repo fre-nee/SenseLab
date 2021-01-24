@@ -3,7 +3,7 @@ struct Store {
   char ssid[64];
   char password[64];
   int opMode;
-  int projectId;
+  char projectId[64];
 };
 
 Store store;

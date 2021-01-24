@@ -10,6 +10,7 @@
 #include "HandleNotFound.h"
 #include "HandleRoot.h"
 #include "HandleScanWifi.h"
+#include "HandleDeviceSetup.h"
 
 /*
     opMode
@@ -30,7 +31,13 @@ void setup()
   if (oprationMode == 1)
   {
     IPAddress ip = createAP(store.ssid);
-    Serial.println("IP Adress ->" + ip.toString());
+    Serial.println("SenseLab - IP Adress ->" + ip.toString());
+  }
+
+  if (oprationMode == 2)
+  {
+    IPAddress ip = createAP(store.deviceId);
+    Serial.println(String(store.deviceId) + " - IP Adress ->" + ip.toString());
   }
 
   if (MDNS.begin("esp8266"))
@@ -40,6 +47,7 @@ void setup()
 
   server.on("/", handleRoot);
   server.on("/scanwifi", handleScanWifi);
+  server.on("/devicesetup", handleDeviceSetup);
   server.onNotFound(handleNotFound);
 
   server.begin();
