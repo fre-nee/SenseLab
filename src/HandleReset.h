@@ -9,8 +9,8 @@ void handleReset()
 
     EEPROM.put(addr, store);
     EEPROM.commit();
-    server.send(200, "text/plain", "Device reset set successfully.");
-    Serial.println("Resetting ESP");
+    Serial.println("Device reset set successfully.");
+    Serial.println("Resetting device in 5 sec.");
     delay(5000);
     ESP.restart();
 }

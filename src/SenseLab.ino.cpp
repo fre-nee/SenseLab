@@ -1,3 +1,6 @@
+# 1 "/var/folders/m5/n46sd_xs7rd50060l67627p00000gn/T/tmpuroui8cf"
+#include <Arduino.h>
+# 1 "/Users/ineelpatel/Documents/PlatformIO/Projects/SenseLab/src/SenseLab.ino"
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -19,28 +22,21 @@
 #define RESET_BUTTON_PIN 0
 EasyButton reset_button(RESET_BUTTON_PIN);
 int duration = 3000;
-
+void onPressedForDuration();
+void setup();
+void loop();
+#line 23 "/Users/ineelpatel/Documents/PlatformIO/Projects/SenseLab/src/SenseLab.ino"
 void onPressedForDuration() {
     Serial.println("Button has been pressed for the given duration!");
 }
-
-
-/*
-    opMode
-    0: no data,
-    1: default data stored on EEPROM,
-    2: enable AP for set,
-    3: send data to server
-*/
-
-//intial setup
+# 37 "/Users/ineelpatel/Documents/PlatformIO/Projects/SenseLab/src/SenseLab.ino"
 void setup()
 {
-  Serial.begin(9600);               //serial monitor
-  EEPROM.begin(512);                // allocate space in EEPROM
-  int oprationMode = checkOpMode(); //get cuurect opMode
+  Serial.begin(9600);
+  EEPROM.begin(512);
+  int oprationMode = checkOpMode();
 
-  //if opMode is 1 create AP for initial device setup
+
   if (oprationMode == 1)
   {
     IPAddress ip = createAP(store.ssid);
@@ -73,7 +69,7 @@ void setup()
 
   reset_button.begin();
 
-  
+
   reset_button.onPressedFor(duration, handleReset);
 
   server.begin();
