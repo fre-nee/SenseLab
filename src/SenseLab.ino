@@ -4,6 +4,9 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
 #include "Store.h"
 #include "CheckOpMode.h"
 #include "CreateAP.h"
@@ -16,14 +19,19 @@
 #include "HandleReset.h"
 #include "EasyButton.h"
 
+#define ONE_WIRE_BUS 4
 #define RESET_BUTTON_PIN 0
+
 EasyButton reset_button(RESET_BUTTON_PIN);
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
 int duration = 3000;
 
-void onPressedForDuration() {
-    Serial.println("Button has been pressed for the given duration!");
+void onPressedForDuration()
+{
+  Serial.println("Button has been pressed for the given duration!");
 }
-
 
 /*
     opMode
@@ -73,7 +81,6 @@ void setup()
 
   reset_button.begin();
 
-  
   reset_button.onPressedFor(duration, handleReset);
 
   server.begin();
@@ -82,7 +89,15 @@ void setup()
 
 void loop()
 {
+  sensors.requestTemperatures(); 
+  Serial.println("Temperature is: ");
+  Serial.println(sensors.getTempCByIndex(0));
+  
+  sensorValue = analogRead(sensorPin);
+  Serial.println("Analog Value : ");
+  Serial.println(sensorValue);
   server.handleClient();
   MDNS.update();
   reset_button.read();
+  delay(2000);
 }
