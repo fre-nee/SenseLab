@@ -90,12 +90,16 @@ void setup()
 void loop()
 {
   sensors.requestTemperatures(); 
-  Serial.println("Temperature is: ");
+  
+  Serial.print("Temperature is: ");
   Serial.println(sensors.getTempCByIndex(0));
   
   sensorValue = analogRead(sensorPin);
-  Serial.println("Analog Value : ");
-  Serial.println(sensorValue);
+  int moisture = ((1024 - sensorValue ) * 100) / 1024;
+  Serial.print("moisture : ");
+  Serial.print(moisture);
+  Serial.println(" %");
+
   server.handleClient();
   MDNS.update();
   reset_button.read();
