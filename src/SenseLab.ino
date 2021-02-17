@@ -6,6 +6,8 @@
 #include <ArduinoJson.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <HttpClient.h>
+#include <ESP8266HTTPClient.h>
 
 #include "Store.h"
 #include "CheckOpMode.h"
@@ -25,6 +27,9 @@
 EasyButton reset_button(RESET_BUTTON_PIN);
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
+
+StaticJsonDocument<400> masterData;
+StaticJsonDocument<1000> requestArray;
 
 int duration = 3000;
 
@@ -89,16 +94,54 @@ void setup()
 
 void loop()
 {
-  sensors.requestTemperatures(); 
-  
+  JsonArray array = requestArray.to<JsonArray>();
+
+  JsonObject masterObject = masterData.to<JsonObject>();
+
+  String postMessage;
+
+  sensors.requestTemperatures();
+
   Serial.print("Temperature is: ");
   Serial.println(sensors.getTempCByIndex(0));
-  
+
   sensorValue = analogRead(sensorPin);
-  int moisture = ((1024 - sensorValue ) * 100) / 1024;
+  int moisture = ((1024 - sensorValue) * 100) / 1024;
   Serial.print("moisture : ");
   Serial.print(moisture);
   Serial.println(" %");
+
+  int oprationMode = checkOpMode();
+
+  if (oprationMode == 3)
+  {
+    masterObject["deviceId"] = store.deviceId;
+    masterObject["soilMoisture"] = moisture;
+    masterObject["soilTemprature"] = sensors.getTempCByIndex(0);
+    masterObject["soilPh"] = 0;
+    masterObject["solarRadiation"] = 0;
+    masterObject["airTemprature"] = 0;
+    masterObject["airHumidity"] = 0;
+    masterObject["aqi"] = 0;
+
+    array.add(masterObject);
+
+    char JSONmessageBuffer[2000];
+
+    serializeJson(array, JSONmessageBuffer);
+    serializeJsonPretty(array, Serial);
+
+    Serial.println("");
+
+    http.begin("http://mitti-backend-monorepo.herokuapp.com/api/functions/dumpData");
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("X-Parse-Application-Id", "mitti-backend");
+    http.addHeader("X-Parse-REST-API-Key", "vMvvybc1z4*Q$!J*k4P4NNx");
+
+    int httpCode = http.POST(JSONmessageBuffer);
+    Serial.print("httpCode -> ");
+    Serial.println(httpCode);
+  }
 
   server.handleClient();
   MDNS.update();

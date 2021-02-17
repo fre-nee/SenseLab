@@ -7,10 +7,13 @@ struct Store
   char projectId[64];
 };
 
+
 Store store;
 uint addr = 0;
 
 ESP8266WebServer server(80); // Create Web Server on Port 80
+
+HTTPClient http;
 
 int sensorPin = A0;
 int sensorValue;
