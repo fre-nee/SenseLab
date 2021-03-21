@@ -8,6 +8,7 @@
 #include <DallasTemperature.h>
 #include <HttpClient.h>
 #include <ESP8266HTTPClient.h>
+#include <PubSubClient.h>
 
 #include "Store.h"
 #include "CheckOpMode.h"
@@ -23,6 +24,10 @@
 
 #define ONE_WIRE_BUS 4
 #define RESET_BUTTON_PIN 0
+
+const char *mqtt_server = "1.2.3.4";
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 EasyButton reset_button(RESET_BUTTON_PIN);
 OneWire oneWire(ONE_WIRE_BUS);
@@ -45,6 +50,18 @@ void onPressedForDuration()
     2: enable AP for set,
     3: send data to server
 */
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++)
+  {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
 
 //intial setup
 void setup()
@@ -70,6 +87,12 @@ void setup()
   {
     IPAddress ip = connectWiFi(store.ssid, store.password);
     Serial.println(String(store.ssid) + " - IP Adress ->" + ip.toString());
+    delay(1000);
+    client.setServer(mqtt_server, 1883);
+    client.connect(store.deviceId);
+    Serial.print("MQTT server -> ");
+    Serial.println(client.connected());
+    client.setCallback(callback);
   }
 
   if (MDNS.begin("esp8266"))
@@ -102,14 +125,14 @@ void loop()
 
   sensors.requestTemperatures();
 
-  Serial.print("Temperature is: ");
-  Serial.println(sensors.getTempCByIndex(0));
+  // Serial.print("Temperature is: ");
+  // Serial.println(sensors.getTempCByIndex(0));
 
   sensorValue = analogRead(sensorPin);
   int moisture = ((1024 - sensorValue) * 100) / 1024;
-  Serial.print("moisture : ");
-  Serial.print(moisture);
-  Serial.println(" %");
+  // Serial.print("moisture : ");
+  // Serial.print(moisture);
+  // Serial.println(" %");
 
   int oprationMode = checkOpMode();
 
@@ -129,22 +152,21 @@ void loop()
     char JSONmessageBuffer[2000];
 
     serializeJson(array, JSONmessageBuffer);
-    serializeJsonPretty(array, Serial);
-
-    Serial.println("");
+    // serializeJsonPretty(array, Serial);
 
     http.begin("http://mitti-backend-monorepo.herokuapp.com/api/functions/dumpData");
     http.addHeader("Content-Type", "application/json");
     http.addHeader("X-Parse-Application-Id", "mitti-backend");
     http.addHeader("X-Parse-REST-API-Key", "vMvvybc1z4*Q$!J*k4P4NNx");
 
-    int httpCode = http.POST(JSONmessageBuffer);
-    Serial.print("httpCode -> ");
-    Serial.println(httpCode);
+    // int httpCode = http.POST(JSONmessageBuffer);
+    // Serial.print("httpCode -> ");
+    // Serial.println(httpCode);
+
+    client.publish(store.deviceId, JSONmessageBuffer);
   }
 
   server.handleClient();
   MDNS.update();
   reset_button.read();
-  delay(2000);
 }
