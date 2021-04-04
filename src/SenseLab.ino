@@ -1,3 +1,4 @@
+#include <ESP8266MQTTClient.h>
 #include <EEPROM.h>
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
@@ -25,9 +26,16 @@
 #define ONE_WIRE_BUS 4
 #define RESET_BUTTON_PIN 0
 
-const char *mqtt_server = "1.2.3.4";
-WiFiClient espClient;
-PubSubClient client(espClient);
+//Status LED pins
+#define RED D5
+#define GREEN D6
+#define BLUE D7
+
+MQTTClient mqtt;
+
+const char *mqtt_server = "mqtt-senselab.herokuapp.com";
+// WiFiClient espClient;
+// PubSubClient client(espClient);
 
 EasyButton reset_button(RESET_BUTTON_PIN);
 OneWire oneWire(ONE_WIRE_BUS);
@@ -70,17 +78,33 @@ void setup()
   EEPROM.begin(512);                // allocate space in EEPROM
   int oprationMode = checkOpMode(); //get cuurect opMode
 
+  pinMode(RED, OUTPUT);
+  pinMode(GREEN, OUTPUT);
+  pinMode(BLUE, OUTPUT);
+
+  digitalWrite(RED, HIGH);
+  digitalWrite(GREEN, HIGH);
+  digitalWrite(BLUE, LOW);
+
   //if opMode is 1 create AP for initial device setup
   if (oprationMode == 1)
   {
     IPAddress ip = createAP(store.ssid);
     Serial.println("SenseLab - IP Adress ->" + ip.toString());
+
+    digitalWrite(RED, HIGH);
+    digitalWrite(GREEN, HIGH);
+    digitalWrite(BLUE, LOW);
   }
 
   if (oprationMode == 2)
   {
     IPAddress ip = createAP(store.deviceId);
     Serial.println(String(store.deviceId) + " - IP Adress ->" + ip.toString());
+
+    digitalWrite(RED, HIGH);
+    digitalWrite(GREEN, LOW);
+    digitalWrite(BLUE, HIGH);
   }
 
   if (oprationMode == 3)
@@ -88,11 +112,33 @@ void setup()
     IPAddress ip = connectWiFi(store.ssid, store.password);
     Serial.println(String(store.ssid) + " - IP Adress ->" + ip.toString());
     delay(1000);
-    client.setServer(mqtt_server, 1883);
-    client.connect(store.deviceId);
-    Serial.print("MQTT server -> ");
-    Serial.println(client.connected());
-    client.setCallback(callback);
+
+    // client.setServer(mqtt_server, 80);
+    // client.connect(store.deviceId);
+    // Serial.print("MQTT server -> ");
+    // Serial.println(client.connected());
+    // client.setCallback(callback);
+
+    mqtt.onData([](String topic, String data, bool cont) {
+      Serial.printf("Data received, topic: %s, data: %s\r\n", topic.c_str(), data.c_str());
+    });
+
+    mqtt.onConnect([]() {
+      Serial.printf("MQTT: Connected\r\n");
+      Serial.printf("Subscribe id: %d\r\n", mqtt.subscribe("/qos0", 0));
+      mqtt.subscribe("/data", 1);
+    });
+
+    mqtt.onDisconnect([]() {
+      Serial.printf("MQTT: Disconnected\r\n");
+    });
+
+    mqtt.begin("ws://mqtt-senselab.herokuapp.com:80");
+    mqtt.connect();
+
+    digitalWrite(RED, HIGH);
+    digitalWrite(GREEN, LOW);
+    digitalWrite(BLUE, LOW);
   }
 
   if (MDNS.begin("esp8266"))
@@ -112,6 +158,7 @@ void setup()
   reset_button.onPressedFor(duration, handleReset);
 
   server.begin();
+
   Serial.println("HTTP server started");
 }
 
@@ -129,7 +176,7 @@ void loop()
   // Serial.println(sensors.getTempCByIndex(0));
 
   sensorValue = analogRead(sensorPin);
-  int moisture = ((1024 - sensorValue) * 100) / 1024;
+  int moisture = ((sensorValue)*100) / 1024;
   // Serial.print("moisture : ");
   // Serial.print(moisture);
   // Serial.println(" %");
@@ -139,13 +186,13 @@ void loop()
   if (oprationMode == 3)
   {
     masterObject["deviceId"] = store.deviceId;
-    masterObject["soilMoisture"] = moisture;
-    masterObject["soilTemprature"] = sensors.getTempCByIndex(0);
-    masterObject["soilPh"] = 0;
-    masterObject["solarRadiation"] = 0;
-    masterObject["airTemprature"] = 0;
-    masterObject["airHumidity"] = 0;
-    masterObject["aqi"] = 0;
+    masterObject["moisture"] = moisture;
+    masterObject["temprature"] = sensors.getTempCByIndex(0);
+    // masterObject["soilPh"] = 0;
+    // masterObject["solarRadiation"] = 0;
+    // masterObject["airTemprature"] = 0;
+    // masterObject["airHumidity"] = 0;
+    // masterObject["aqi"] = 0;
 
     array.add(masterObject);
 
@@ -154,18 +201,18 @@ void loop()
     serializeJson(array, JSONmessageBuffer);
     // serializeJsonPretty(array, Serial);
 
-    http.begin("http://mitti-backend-monorepo.herokuapp.com/api/functions/dumpData");
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("X-Parse-Application-Id", "mitti-backend");
-    http.addHeader("X-Parse-REST-API-Key", "vMvvybc1z4*Q$!J*k4P4NNx");
+    // http.begin("http://mitti-backend-monorepo.herokuapp.com/api/functions/dumpData");
+    // http.addHeader("Content-Type", "application/json");
+    // http.addHeader("X-Parse-Application-Id", "mitti-backend");
+    // http.addHeader("X-Parse-REST-API-Key", "vMvvybc1z4*Q$!J*k4P4NNx");
 
     // int httpCode = http.POST(JSONmessageBuffer);
     // Serial.print("httpCode -> ");
     // Serial.println(httpCode);
-
-    client.publish(store.deviceId, JSONmessageBuffer);
+    mqtt.publish(store.deviceId, JSONmessageBuffer);
   }
 
+  mqtt.handle();
   server.handleClient();
   MDNS.update();
   reset_button.read();

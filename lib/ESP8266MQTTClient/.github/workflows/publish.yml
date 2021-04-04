@@ -1,0 +1,28 @@
+name: publish
+
+on:
+  release:
+    types: [ published ]
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker://sglahn/platformio-core:5.0.1
+        with:
+          args: ci --lib . --board d1_mini examples/MQTTClient
+      - name: set version
+        run: |
+          # Strip git ref prefix from version
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+
+          # Update version in library.json
+          jq -n --argjson json "$(cat library.json)" --arg version "$VERSION" '$json | .version=$version' > library.json
+      - uses: docker://sglahn/platformio-core:5.0.1
+        env:
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
+        with:
+          args: package publish
